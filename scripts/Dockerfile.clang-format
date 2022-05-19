@@ -1,0 +1,7 @@
+#syntax=docker/dockerfile:1.0-experimental
+FROM alpine:3.15.4
+
+RUN apk update && apk add --no-cache clang
+
+# finish this and write a script that basically runs clang using
+# a volume that is this entire repo or just the one proto file
