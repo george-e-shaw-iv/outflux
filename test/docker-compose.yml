@@ -8,10 +8,12 @@ services:
     image: influxdb:2.2.0-alpine
     platform: linux/x86_64 # Make it work on Apple silicon.
     environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=outflux
-      - DOCKER_INFLUXDB_INIT_PASSWORD=outflux
-      - DOCKER_INFLUXDB_INIT_ORG=outflux-server
+      - DOCKER_INFLUXDB_INIT_PASSWORD=outflux-very-secure-password
+      - DOCKER_INFLUXDB_INIT_ORG=outflux
       - DOCKER_INFLUXDB_INIT_BUCKET=test
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=8d117b744bff43308b5eaf7f9b2abdd6
     networks:
       - server
 
@@ -32,39 +34,47 @@ services:
     image: influxdb:2.2.0-alpine
     platform: linux/x86_64 # Make it work on Apple silicon.
     environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=outflux
-      - DOCKER_INFLUXDB_INIT_PASSWORD=outflux
-      - DOCKER_INFLUXDB_INIT_ORG=outflux-client
+      - DOCKER_INFLUXDB_INIT_PASSWORD=outflux-very-secure-password
+      - DOCKER_INFLUXDB_INIT_ORG=outflux
       - DOCKER_INFLUXDB_INIT_BUCKET=test
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=test-admin-token
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=589349e2eac64a4ba1d507df4ae7c344
     networks:
       - client
+    # ports:
+      # Remap port 8086 to 8186 else since its exposed by the container, but we want to use
+      # 8086 to act as a proxy to this influxdb instance in `telegraf-client` (telegraf-client
+      # is acting as a proxy for write requests to this influxdb instance, telegraf listens on
+      # 8086, where clients would expect to find influxdb, and proxies the request to
+      # influx-client:8186 on the client network).
+      # - "8186:8086"
     depends_on:
       - influx-server
 
   # Telegraf for the test client.
   telegraf-client:
     image: telegraf:1.22.4-alpine
-    command: >
-      sh -c "mkdir -p /telegraf &&
-      sudo chown -R telegraf:telegraf /telegraf &&
-      telegraf"
     platform: linux/x86_64 # Make it work on Apple silicon.
     environment:
       # These environment variables are used in the telegraf configuration
       # file. These should be what the influx-client use.
-      - DOCKER_INFLUXDB_INIT_ORG=outflux-client
+      - DOCKER_INFLUXDB_INIT_ORG=outflux
       - DOCKER_INFLUXDB_INIT_BUCKET=test
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=test-admin-token
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=589349e2eac64a4ba1d507df4ae7c344
     volumes:
       # Metrics written to influx-client are dual-written as InfluxDB
-      # Line Data is written to /telegraf/metrics.out. This is configured
+      # Line Data is written to /etc/telegraf/metrics.out. This is configured
       # in the test/client/telegraf.conf file which is used by telegraf-client.
-      - telegraf:/telegraf
+      - telegraf:/etc/telegraf
 
       # Telegraf configuration file mount.
       - ./client/telegraf.conf:/etc/telegraf/telegraf.conf
     restart: on-failure
+    expose:
+      - 8086 # Exposing this to the host machine gives us the ability easily send data to telegraf.
+    ports:
+      - "127.0.0.1:8086:8086"
     networks:
       - client
     depends_on:

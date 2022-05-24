@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+option go_package = "github.com/george-e-shaw-iv/outflux/internal/grpc";
+
 // DataPoint represents a singular data point for InfluxDB. This format is
 // basically copied from the InfluxDB Line Protocol format. Documentation for
 // that format can be found here:
@@ -21,12 +23,9 @@ message SyncRequest {
 // given in SyncRequest that failed to sync with the server and will need
 // to be resent again.
 message SyncResponse {
-  repeated int Failed = 1;
+  repeated uint32 Failed = 1;
 }
 
 service Outflux {
-
-
-    
   rpc Sync(SyncRequest) returns (SyncResponse);
 }

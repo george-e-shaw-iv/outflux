@@ -43,3 +43,11 @@ written in [InfluxDB Line Protocol](https://docs.influxdata.com/influxdb/v2.2/re
 format and the client is configured to pull data it needs to sync to the server from this
 file. When the client reads from and successfully syncs using the file, it will adjust it
 accordingly by removing those now-synced lines.
+
+## Why?
+
+This project was initially necessary because of the need to remotely sync data from an InfluxDB
+instance running on an IoT network with sporadic internet connection (a boat). If you have a steady
+internet connection, the use cases for this service dwindle quickly I think. The reason I say this
+is because in that case what you'd want to do is use telegraf to dual-write between the primary and
+the remote backup in real-time at that point.
