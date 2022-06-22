@@ -57,7 +57,6 @@ func main() {
 		"server": log.Fields{
 			"address": cfg.Server.Address,
 		},
-		"mechanismName": cfg.MechanismName(),
 	})
 
 	exitCode = 0

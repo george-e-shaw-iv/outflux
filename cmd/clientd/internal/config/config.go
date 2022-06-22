@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/george-e-shaw-iv/outflux/cmd/clientd/internal/mechanism/demand"
+	"github.com/george-e-shaw-iv/outflux/cmd/clientd/internal/mechanism/interval"
 	"gopkg.in/yaml.v3"
 )
 
@@ -24,75 +26,16 @@ type Config struct {
 		MaxNumPoints int `json:"maxNumPoints" yaml:"maxNumPoints"`
 	} `json:"chunk" yaml:"chunk"`
 
-	Mechanism_ map[string]interface{} `json:"mechanism" yaml:"mechanism"`
-
-	// mechanismIdentifier maps to one of the constant identifiers defined
-	// in a constant block above this type.
-	mechanismIdentifier int
-	mechanismName       string
-	mechanism           interface{}
+	Mechanism struct {
+		Interval *interval.Config `json:"interval" yaml:"interval"`
+		OnDemand *demand.Config   `json:"onDemand" yaml:"onDemand"`
+	} `json:"mechanism" yaml:"mechanism"`
 }
 
-// UnmarshalJSON implements the json.Unmarshaler interface for the Config type.
-func (c *Config) UnmarshalJSON(b []byte) error {
-	var err error
-
-	// create an intermediate type to avoid infinite recursion for unmarshaling.
-	type _config Config
-
-	var _c _config
-	if err = json.Unmarshal(b, &_c); err != nil {
-		return err
-	}
-
-	if _c.mechanismIdentifier, _c.mechanism, err = parseMechanism(_c.Mechanism_); err != nil {
-		return fmt.Errorf("parse mechanism: %w", err)
-	}
-
-	// We don't need this information anymore, its wasted memory.
-	_c.Mechanism_ = nil
-
-	// Set the receiver.
-	*c = Config(_c)
-
-	return nil
-}
-
-// UnmarshalYAML implements the yaml.Unmarshaler interface for the Config type.
-func (c *Config) UnmarshalYAML(value *yaml.Node) error {
-	var err error
-
-	// create an intermediate type to avoid infinite recursion for unmarshaling.
-	type _config Config
-
-	var _c _config
-	if err = value.Decode(&_c); err != nil {
-		return err
-	}
-
-	if _c.mechanismIdentifier, _c.mechanism, err = parseMechanism(_c.Mechanism_); err != nil {
-		return fmt.Errorf("parse mechanism: %w", err)
-	}
-
-	// We don't need this information anymore, its wasted memory.
-	_c.Mechanism_ = nil
-
-	// Set the receiver.
-	*c = Config(_c)
-
-	return nil
-}
-
-// Defaults sets defaults on unset fields on the Config type.
-func (c *Config) Defaults() {
-	if strings.TrimSpace(c.File) == "" {
-		c.File = "/etc/outflux/metrics.out"
-	}
-}
-
-// MechanismName returns c.mechanismName, parsed from Config.Mechanism_ dynamically.
-func (c *Config) MechanismName() string {
-	return c.mechanismName
+// Default represents the default values defined for the struct fields on the
+// Config type.
+var Default = Config{
+	File: "/etc/outflux/metrics.out",
 }
 
 // Parse takes the filepath of a configuration file and parses the configuration.
