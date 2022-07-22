@@ -64,7 +64,7 @@ func (w *writers) ByLevel(level int) io.Writer {
 	return writer
 }
 
-// syncWriter protects from fragmented log lines.
+// syncWriter protects against fragmented log lines.
 type syncWriter struct {
 	mu     sync.Mutex
 	writer io.Writer
