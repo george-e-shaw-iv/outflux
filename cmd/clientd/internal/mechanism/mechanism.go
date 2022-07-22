@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+	_sync "sync"
 
 	"github.com/george-e-shaw-iv/outflux/cmd/clientd/internal/config"
 	"github.com/george-e-shaw-iv/outflux/cmd/clientd/internal/mechanism/demand"
@@ -32,27 +34,36 @@ type Syncer interface {
 // for running multiple mechanisms and interacting with the primary syncing
 // package.
 type Runner struct {
-	cfg  *config.Config
-	sync *sync.Runner
+	cfg     *config.Config
+	sync    *sync.Runner
+	syncers []Syncer
 
-	wg sync.WaitGroup
+	wg _sync.WaitGroup
+}
+
+// NewRunner returns an initialized instance of Runner.
+func NewRunner(cfg *config.Config, syncRunner *sync.Runner) *Runner {
+	return &Runner{
+		cfg:  cfg,
+		sync: syncRunner,
+	}
 }
 
 // RunAll runs all of the configured mechanisms and effectively starts the syncing
 // loop. This is a blocking function.
-func (r *Runner) RunAll(ctx context.Context, cfg *config.Config) error {
+func (r *Runner) RunAll(ctx context.Context) error {
 	var syncers []Syncer
 
-	if cfg.Mechanism.Interval != nil {
-		intervalSyncer, err := interval.NewSyncer(cfg.Mechanism.Interval)
+	if r.cfg.Mechanism.Interval != nil {
+		intervalSyncer, err := interval.NewSyncer(r.cfg.Mechanism.Interval)
 		if err != nil {
 			return fmt.Errorf("initialize interval mechanism: %w", err)
 		}
 		syncers = append(syncers, intervalSyncer)
 	}
 
-	if cfg.Mechanism.OnDemand != nil {
-		onDemandSyncer, err := demand.NewSyncer(cfg.Mechanism.OnDemand)
+	if r.cfg.Mechanism.OnDemand != nil {
+		onDemandSyncer, err := demand.NewSyncer(r.cfg.Mechanism.OnDemand)
 		if err != nil {
 			return fmt.Errorf("initialize on-demand mechanism: %w", err)
 		}
@@ -96,5 +107,20 @@ func (r *Runner) RunAll(ctx context.Context, cfg *config.Config) error {
 	// which will only happen on a context cancellation event.
 	r.wg.Wait()
 
+	return nil
+}
+
+// Close closes all of the syncers.
+func (r *Runner) Close(ctx context.Context) error {
+	var errs []string
+	for i := range r.syncers {
+		if err := r.syncers[i].Close(ctx); err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+
+	if len(errs) > 0 {
+		return errors.New(strings.Join(errs, ", "))
+	}
 	return nil
 }

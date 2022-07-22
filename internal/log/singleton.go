@@ -1,7 +1,7 @@
 package log
 
 // singleton is the singleton version of the Logger type.
-var singleton Logger
+var singleton = defaultLogger
 
 // Debug prints a debug level log line.
 func Debug(message string, fields Fields) {

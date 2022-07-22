@@ -1,6 +1,9 @@
 package log
 
-import "io"
+import (
+	"encoding/json"
+	"io"
+)
 
 // Constant block for log level definition identifiers.
 const (
@@ -29,10 +32,35 @@ const (
 
 // formatJSON is the JSON representation of a log line.
 type formatJSON struct {
-	Timestamp string `json:"timestamp"`
-	Level     string `json:"level"`
-	Message   string `json:"message"`
-	Fields    Fields `json:"fields"`
+	Timestamp    string   `json:"timestamp"`
+	Level        string   `json:"level"`
+	Message      string   `json:"message"`
+	Fields       []Fields `json:"-"`
+	MergedFields Fields   `json:"fields,omitempty"`
+}
+
+// MarshalJSON implements the json.Marshaler interface for formatJSON. Right now
+// the only purpose this serves is to generate the MergedFields struct field.
+func (f formatJSON) MarshalJSON() ([]byte, error) {
+	if len(f.Fields) > 0 {
+		f.MergedFields = make(Fields)
+	}
+
+	for i := range f.Fields {
+		for k, v := range f.Fields[i] {
+			f.MergedFields[k] = v
+		}
+	}
+
+	// This data is now worthless.
+	f.Fields = nil
+
+	// Create an intermediate type to avoid infinite recursion on the json.Marshaler
+	// interface implementation.
+	type _formatJSON formatJSON
+	_f := _formatJSON(f)
+
+	return json.Marshal(_f)
 }
 
 // formatHumanReadable is the human readable version of a log line, in the form

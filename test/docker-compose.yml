@@ -87,6 +87,7 @@ services:
       # where metrics written to influx-client are dual-written to in the form
       # of InfluxDB Line Data into a file, which outflux-client reads from.
       - telegraf:/telegraf
+      - ./client/telegraf.conf:/etc/outflux/config.yaml
     networks:
       # The client and server need to be able to communicate so they
       # are the only two services that share both networks.

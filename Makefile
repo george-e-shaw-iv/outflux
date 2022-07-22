@@ -9,3 +9,7 @@ fmt:
 PHONY: generate
 generate:
 	go generate ./...
+
+PHONY: server-grpcui
+server-grpcui:
+	./scripts/grpcui.sh

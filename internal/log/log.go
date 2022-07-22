@@ -12,9 +12,6 @@ import (
 	"time"
 )
 
-// Fields is a type used to embed fields in log lines.
-type Fields map[string]interface{}
-
 // Logger is the type that has the actual logger implementation.
 type Logger struct {
 	level   int
@@ -25,14 +22,17 @@ type Logger struct {
 	timestampFormat string
 }
 
+// defaultLogger is an instance of Logger with default options applied.
+var defaultLogger = Logger{
+	level:           LevelInfo,
+	format:          FormatJSON,
+	writers:         defaultWriters(),
+	timestampFormat: time.RFC3339,
+}
+
 // NewLogger returns a Logger configured with the passed in functional options.
 func NewLogger(opts ...Option) (*Logger, error) {
-	l := Logger{
-		level:           LevelInfo,
-		format:          FormatJSON,
-		writers:         defaultWriters(),
-		timestampFormat: time.RFC3339,
-	}
+	l := defaultLogger
 
 	for i := range opts {
 		opts[i](&l)
@@ -60,7 +60,7 @@ func (l *Logger) validate() error {
 
 // print is the underlying print function that all of the receiver functions on
 // the Logger type that print use.
-func (l *Logger) print(level int, message string, fields Fields) {
+func (l *Logger) print(level int, message string, fields ...Fields) {
 	if level < l.level {
 		// If we're trying to log below the level we're configured to log for,
 		// then we should shallow return here.
@@ -81,6 +81,7 @@ func (l *Logger) print(level int, message string, fields Fields) {
 		b, err := json.Marshal(line)
 		if err == nil {
 			fmt.Fprintln(l.writers.ByLevel(level), string(b))
+			return
 		}
 
 		fmt.Fprintf(l.writers.ByLevel(level), "error marshaling log line, falling back to human readable format: %v\n", err)
@@ -91,27 +92,27 @@ func (l *Logger) print(level int, message string, fields Fields) {
 }
 
 // Debug prints a debug level log line.
-func (l *Logger) Debug(message string, fields Fields) {
-	l.print(LevelDebug, message, fields)
+func (l *Logger) Debug(message string, fields ...Fields) {
+	l.print(LevelDebug, message, fields...)
 }
 
 // Info prints an info level log line.
-func (l *Logger) Info(message string, fields Fields) {
-	l.print(LevelInfo, message, fields)
+func (l *Logger) Info(message string, fields ...Fields) {
+	l.print(LevelInfo, message, fields...)
 }
 
 // Warn prints a warn level log line.
-func (l *Logger) Warn(message string, fields Fields) {
-	l.print(LevelWarn, message, fields)
+func (l *Logger) Warn(message string, fields ...Fields) {
+	l.print(LevelWarn, message, fields...)
 }
 
 // Error prints a error level log line.
-func (l *Logger) Error(message string, fields Fields) {
-	l.print(LevelError, message, fields)
+func (l *Logger) Error(message string, fields ...Fields) {
+	l.print(LevelError, message, fields...)
 }
 
 // Fatal prints a fatal level log line.
-func (l *Logger) Fatal(message string, fields Fields) {
-	l.print(LevelFatal, message, fields)
+func (l *Logger) Fatal(message string, fields ...Fields) {
+	l.print(LevelFatal, message, fields...)
 	os.Exit(1)
 }

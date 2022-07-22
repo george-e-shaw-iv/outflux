@@ -1,5 +1,5 @@
 // Package config defines configuration which is consumed in the form of YAML or
-// JSON files for the outflux client daemon.
+// JSON files for the outflux server daemon.
 package config
 
 import (
@@ -8,39 +8,21 @@ import (
 	"os"
 	"strings"
 
-	"github.com/george-e-shaw-iv/outflux/cmd/clientd/internal/mechanism/demand"
-	"github.com/george-e-shaw-iv/outflux/cmd/clientd/internal/mechanism/interval"
 	"gopkg.in/yaml.v3"
 )
 
-// Server is a struct containing the necessary configuration to connect
-// to the outflux server.
-type Server struct {
-	Address string `json:"address" yaml:"address"`
-}
-
-// Config is the type that defines the structure of the outflux client
+// Config is the type that defines the structure of the outflux server
 // configuration file.
 type Config struct {
-	File   string `json:"file" yaml:"file"`
-	Server Server `json:"server" yaml:"server"`
-	Chunk  *struct {
-		MaxSizeBytes int `json:"maxSizeBytes" yaml:"maxSizeBytes"`
-		MaxNumPoints int `json:"maxNumPoints" yaml:"maxNumPoints"`
-	} `json:"chunk" yaml:"chunk"`
-	Mechanism struct {
-		Interval *interval.Config `json:"interval" yaml:"interval"`
-		OnDemand *demand.Config   `json:"onDemand" yaml:"onDemand"`
-	} `json:"mechanism" yaml:"mechanism"`
+	Host string `json:"host" yaml:"host"`
+	Port int    `json:"port" yaml:"port"`
 }
 
 // Default represents the default values defined for the struct fields on the
 // Config type.
 var Default = Config{
-	File: "/etc/outflux/metrics.out",
-	Server: Server{
-		Address: "127.0.0.1:8000",
-	},
+	Host: "127.0.0.1",
+	Port: 8000,
 }
 
 // Parse takes the filepath of a configuration file and parses the configuration.
