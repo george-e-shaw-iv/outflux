@@ -1,0 +1,9 @@
+# Outflux test client configuration file.
+
+file: "/telegraf/metrics.out"
+server:
+  address: "outflux-server:8000"
+mechanism:
+  onDemand:
+    port: 8000
+    endpoint: "sync"

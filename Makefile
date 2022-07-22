@@ -1,6 +1,6 @@
 PHONY: build
 build: fmt generate
-	go build -o bin/ ./cmd/outflux
+	go build -o bin/ ./cmd/...
 
 PHONY: fmt
 fmt:
@@ -9,3 +9,7 @@ fmt:
 PHONY: generate
 generate:
 	go generate ./...
+
+PHONY: server-grpcui
+server-grpcui:
+	./scripts/grpcui.sh
